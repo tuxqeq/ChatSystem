@@ -56,12 +56,21 @@ public class Client {
         String username = scanner.nextLine();
         Client client = new Client(username, "localhost", 12345);
 
-        System.out.println("Commands:\n@username message (private message)\nBANNED_PHRASES (query banned phrases)");
+        System.out.println("§--------------------------------------------------------------§\n" +
+                        "Commands:\n" +
+                        "@username message (private message) \n" +
+                        "If you want to send a message to multiple users please type in their names with @ and spaces between mentions\n" +
+                        "BANNED_PHRASES (query banned phrases)\n" +
+                        "§--------------------------------------------------------------§");
         while (true) {
             String input = scanner.nextLine();
-            if (input.equalsIgnoreCase("BANNED_PHRASES")) {
+            if (input.isEmpty()) {
+                System.out.println("Message can not be empty");
+            }
+            else if (input.equalsIgnoreCase("BANNED_PHRASES")) {
                 client.requestBannedPhrases();
             } else if (input.startsWith("@")) {
+                ArrayList<String> recipients = new ArrayList<>();
                 int spaceIndex = input.indexOf(" ");
                 if (spaceIndex != -1) {
                     String recipient = input.substring(1, spaceIndex);
