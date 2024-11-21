@@ -1,8 +1,8 @@
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
-import java.net.Socket;
+import java.io.*;
+import java.net.*;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 class ClientHandler extends Thread {
     private Socket socket;
@@ -20,21 +20,53 @@ class ClientHandler extends Thread {
             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             out = new PrintWriter(socket.getOutputStream(), true);
 
-            clientName = in.readLine();
-            server.registerClient(clientName, this);
-            server.broadcastMessage("Server", clientName + " has joined the chat.");
+
+            while (true) {
+                //out.println("Enter username: ");
+                clientName = in.readLine();
+                out.println("Hello, " + clientName);
+
+                if (clientName == null || clientName.isEmpty()) {
+                    out.println("Invalid username. Please try again.");
+                    continue;
+                }
+
+                if (server.registerClient(clientName, this)) {
+                    //out.println("reg");
+                    break;
+                }else {
+                    out.println("The username '" + clientName + "' is already taken. Please choose another.");
+                }
+            }
 
             String message;
             while ((message = in.readLine()) != null) {
                 if (message.equalsIgnoreCase("BANNED_PHRASES")) {
                     out.println("Banned Phrases: " + server.getBannedPhrases());
-                } else if (message.startsWith("@")) { // Check for private message
-                    int spaceIndex = message.indexOf(" ");
-                    if (spaceIndex != -1) {
-                        String recipient = message.substring(1, spaceIndex);
-                        String privateMessage = message.substring(spaceIndex + 1);
-                        server.sendDirectMessage(clientName, recipient, privateMessage);
+                } else if (message.startsWith("@")) {
+                    Set<String> recipients = new HashSet<>();
+                    String[] parts = message.split(" ");
+                    int index = 0;
+
+                    while (index < parts.length && parts[index].startsWith("@")) {
+                        recipients.add(parts[index].substring(1).toLowerCase());
+                        index++;
                     }
+
+                    String actualMessage = String.join(" ", Arrays.copyOfRange(parts, index, parts.length));
+                    server.sendMultiplePrivateMessages(clientName, recipients, actualMessage);
+                } else if (message.startsWith("!")) {
+                    Set<String> excludedUsers = new HashSet<>();
+                    String[] parts = message.split(" ");
+                    int index = 0;
+
+                    while (index < parts.length && parts[index].startsWith("!")) {
+                        excludedUsers.add(parts[index].substring(1).toLowerCase());
+                        index++;
+                    }
+
+                    String actualMessage = String.join(" ", Arrays.copyOfRange(parts, index, parts.length));
+                    server.sendToAllExcept(clientName, excludedUsers, actualMessage);
                 } else {
                     server.broadcastMessage(clientName, message);
                 }

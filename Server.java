@@ -44,8 +44,17 @@ public class Server {
         }
     }
 
-    public synchronized void registerClient(String clientName, ClientHandler clientHandler) {
+    public synchronized boolean registerClient(String clientName, ClientHandler clientHandler) {
+        if (clients.containsKey(clientName)) {
+            //clientHandler.sendMessage("User " + clientName + " is already connected. Please try again.");
+            return false;
+        }
+        clientHandler.sendMessage("Registration successful. "+ clientName + ", welcome, to the " + serverName + ".");
+        broadcastMessage("Server", clientName + " has joined the chat.");
         clients.put(clientName, clientHandler);
+        System.out.println("Registered client: " + clientName);
+
+        return true;
     }
 
     public synchronized void broadcastMessage(String sender, String message) {
@@ -61,12 +70,22 @@ public class Server {
         }
     }
 
-    public synchronized void sendDirectMessage(String sender, String recipient, String message) {
-        ClientHandler client = clients.get(recipient);
-        if (client != null) {
-            client.sendMessage("(Private) " + sender + ": " + message);
-        } else {
-            clients.get(sender).sendMessage("User " + recipient + " is not connected.");
+    public synchronized void sendMultiplePrivateMessages(String sender, Set<String> recipients, String message) {
+        for (String recipient : recipients) {
+            ClientHandler client = clients.get(recipient.toLowerCase());
+            if (client != null) {
+                client.sendMessage("(Private) " + sender + ": " + message);
+            } else {
+                clients.get(sender).sendMessage("User " + recipient + " is not connected.");
+            }
+        }
+    }
+    public synchronized void sendToAllExcept(String sender, Set<String> excludedUsers, String message) {
+        for (Map.Entry<String, ClientHandler> entry : clients.entrySet()) {
+            String recipient = entry.getKey().toLowerCase();
+            if (!excludedUsers.contains(recipient) && !recipient.equals(sender.toLowerCase())) {
+                entry.getValue().sendMessage(sender + ": " + message);
+            }
         }
     }
 
