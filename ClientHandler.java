@@ -19,23 +19,17 @@ class ClientHandler extends Thread {
         try {
             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             out = new PrintWriter(socket.getOutputStream(), true);
-
+            out.println("Hello, client!");
 
             while (true) {
-                //out.println("Enter username: ");
                 clientName = in.readLine();
-                out.println("Hello, " + clientName);
+                //out.println("Hello, " + clientName);
 
-                if (clientName == null || clientName.isEmpty()) {
-                    out.println("Invalid username. Please try again.");
-                    continue;
-                }
 
                 if (server.registerClient(clientName, this)) {
-                    //out.println("reg");
                     break;
                 }else {
-                    out.println("The username '" + clientName + "' is already taken. Please choose another.");
+                    sendMessage("The username '" + clientName + "' is already taken. Please choose another.");
                 }
             }
 
@@ -43,7 +37,9 @@ class ClientHandler extends Thread {
             while ((message = in.readLine()) != null) {
                 if (message.equalsIgnoreCase("BANNED_PHRASES")) {
                     out.println("Banned Phrases: " + server.getBannedPhrases());
-                } else if (message.startsWith("@")) {
+                } else if(message.equalsIgnoreCase("CLIENTS")){
+                    out.println("Connected clients: " + String.join(",",server.getClients()));
+                }else if (message.startsWith("@")) {
                     Set<String> recipients = new HashSet<>();
                     String[] parts = message.split(" ");
                     int index = 0;

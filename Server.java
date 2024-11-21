@@ -89,6 +89,10 @@ public class Server {
         }
     }
 
+    public synchronized String[] getClients() {
+        return clients.keySet().toArray(new String[0]);
+    }
+
     public synchronized void removeClient(String clientName) {
         clients.remove(clientName);
         broadcastMessage("Server", clientName + " has disconnected.");
@@ -101,6 +105,7 @@ public class Server {
         }
         return false;
     }
+
 
     public static void main(String[] args) {
         Server server = new Server("server_config.txt");

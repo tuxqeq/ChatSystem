@@ -21,8 +21,6 @@ public class Client {
             System.err.println("Unable to connect to the server.");
         }
     }
-
-    // Send normalized client name to the server
     private void sendClientName() {
         out.println(clientName);
     }
@@ -45,7 +43,7 @@ public class Client {
     }
 
     public static void main(String[] args) {
-        System.out.print("1Enter username: ");
+        System.out.print("Enter username: ");
         Scanner scanner = new Scanner(System.in);
         String username;
         Client client = null;
@@ -82,11 +80,11 @@ public class Client {
             }
         }
 
-
-        // Interaction loop for sending messages
         System.out.println("Commands:\n" +
                 "@username1 @username2 message (send private message to multiple users)\n" +
-                "!username1 !username2 message (broadcast excluding specific users)");
+                "!username1 !username2 message (broadcast excluding specific users)\n" +
+                "CLIENTS to list all the clients\n" +
+                "BANNED_PHRASES to list all the banned phrases");
         while (true) {
             String input = scanner.nextLine();
             if (input.isEmpty()) {
