@@ -46,15 +46,18 @@ public class Server {
 
     public synchronized boolean registerClient(String clientName, ClientHandler clientHandler) {
         if (clients.containsKey(clientName)) {
+            clientHandler.sendMessage("The username '" + clientName + "' is already taken. Please choose another.");
             return false;
         }
         clientHandler.sendMessage("Registration successful. " + clientName + ", welcome, to the " + serverName + ".");
         broadcastMessage("Server", clientName + " has joined the chat.");
         clients.put(clientName, clientHandler);
-        System.out.println("Registered client: " + clientName);
-
+        System.out.println("Registered client: " + clientName + " on port: " + clientHandler.getSocket().getPort());
         return true;
     }
+    //TODO: implement finding the clienthandler with a port and client name
+    //TODO: implement storing the client with a port and client name
+    //TODO: max num of clients
 
     public synchronized void broadcastMessage(String sender, String message) {
         if (containsBannedPhrase(message)) {

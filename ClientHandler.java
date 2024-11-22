@@ -15,6 +15,10 @@ class ClientHandler extends Thread {
         this.server = server;
     }
 
+    public Socket getSocket() {
+        return socket;
+    }
+
     public void run() {
         try {
             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
@@ -25,8 +29,6 @@ class ClientHandler extends Thread {
 
                 if (server.registerClient(clientName, this)) {
                     break;
-                }else {
-                    sendMessage("The username '" + clientName + "' is already taken. Please choose another.");
                 }
             }
 
