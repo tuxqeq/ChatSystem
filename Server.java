@@ -7,10 +7,12 @@ public class Server {
     private String serverName;
     private Set<String> bannedPhrases;
     private Map<String, ClientHandler> clients;
+    private Map<String, Integer> clientPorts;
 
     public Server(String configFile) {
         loadConfiguration(configFile);
-        clients = new HashMap<>();
+        //clients = new HashMap<>();
+        clientPorts = new HashMap<>();
     }
 
     private void loadConfiguration(String configFile) {
@@ -44,15 +46,16 @@ public class Server {
         }
     }
 
-    public synchronized boolean registerClient(String clientName, ClientHandler clientHandler) {
-        if (clients.containsKey(clientName)) {
-            clientHandler.sendMessage("The username '" + clientName + "' is already taken. Please choose another.");
+    public synchronized boolean registerClient(String clientName, ClientHandler clientHandler, int port) {
+        if (clientPorts.containsKey(clientName)) {
+            ClientHandler.sendMess("The username '" + clientName + "' is already taken. Please choose another.", port);
             return false;
         }
-        clientHandler.sendMessage("Registration successful. " + clientName + ", welcome, to the " + serverName + ".");
+        ClientHandler.sendMess("Registration successful. " + clientName + ", welcome, to the " + serverName + ".", port);
         broadcastMessage("Server", clientName + " has joined the chat.");
-        clients.put(clientName, clientHandler);
-        System.out.println("Registered client: " + clientName + " on port: " + clientHandler.getSocket().getPort());
+        //clients.put(clientName, clientHandler);
+        clientPorts.put(clientName, port);
+        System.out.println("Registered client: " + clientName + " on port: " + port);
         return true;
     }
     //TODO: implement finding the clienthandler with a port and client name
@@ -61,42 +64,59 @@ public class Server {
 
     public synchronized void broadcastMessage(String sender, String message) {
         if (containsBannedPhrase(message)) {
-            clients.get(sender).sendMessage("Message blocked: contains banned phrase.");
+            //clients.get(sender).sendMessage("Message blocked: contains banned phrase.");
+            ClientHandler.sendMess("Message blocked: contains banned phrase.", clientPorts.get(sender));
             return;
         }
 
-        for (Map.Entry<String, ClientHandler> entry : clients.entrySet()) {
+        /*for (Map.Entry<String, ClientHandler> entry : clients.entrySet()) {
             if (!entry.getKey().equals(sender)) {
                 entry.getValue().sendMessage(sender + ": " + message);
+            }
+        }*/
+        for (Map.Entry<String, Integer> entry : clientPorts.entrySet()) {
+            if (!entry.getKey().equals(sender)) {
+                ClientHandler.sendMess(sender + ": " + message, entry.getValue());
             }
         }
     }
 
     public synchronized void sendMultiplePrivateMessages(String sender, Set<String> recipients, String message) {
         for (String recipient : recipients) {
-            ClientHandler client = clients.get(recipient.toLowerCase());
-            if (client != null) {
-                client.sendMessage("(Private) " + sender + ": " + message);
+            //ClientHandler client = clients.get(recipient.toLowerCase());
+            if (clientPorts.get(recipient) != null) {
+                int port = clientPorts.get(recipient);
+                //client.sendMessage("(Private) " + sender + ": " + message);
+                ClientHandler.sendMess("(Private) " + sender + ": " + message, port);
             } else {
-                clients.get(sender).sendMessage("User " + recipient + " is not connected.");
+                //clients.get(sender).sendMessage("User " + recipient + " is not connected.");
+                int sendPort = clientPorts.get(sender);
+                ClientHandler.sendMess("!User " + recipient + " is not connected.", sendPort);
             }
         }
     }
     public synchronized void sendToAllExcept(String sender, Set<String> excludedUsers, String message) {
-        for (Map.Entry<String, ClientHandler> entry : clients.entrySet()) {
+        /*for (Map.Entry<String, ClientHandler> entry : clients.entrySet()) {
             String recipient = entry.getKey().toLowerCase();
             if (!excludedUsers.contains(recipient) && !recipient.equals(sender.toLowerCase())) {
                 entry.getValue().sendMessage(sender + ": " + message);
+            }
+        }*/
+        for (Map.Entry<String, Integer> entry : clientPorts.entrySet()) {
+            String recipient = entry.getKey().toLowerCase();
+            if (!excludedUsers.contains(recipient) && !recipient.equals(sender.toLowerCase())) {
+                //entry.getValue().sendMessage(sender + ": " + message);
+                ClientHandler.sendMess(sender + ": " + message, entry.getValue());
             }
         }
     }
 
     public synchronized String[] getClients() {
-        return clients.keySet().toArray(new String[0]);
+        return clientPorts.keySet().toArray(new String[0]);
     }
 
     public synchronized void removeClient(String clientName) {
-        clients.remove(clientName);
+        clientPorts.remove(clientName);
         broadcastMessage("Server", clientName + " has disconnected.");
         System.err.println("Client " + clientName + " has disconnected.");
     }
