@@ -46,10 +46,9 @@ public class Server {
 
     public synchronized boolean registerClient(String clientName, ClientHandler clientHandler) {
         if (clients.containsKey(clientName)) {
-            //clientHandler.sendMessage("User " + clientName + " is already connected. Please try again.");
             return false;
         }
-        clientHandler.sendMessage("Registration successful. "+ clientName + ", welcome, to the " + serverName + ".");
+        clientHandler.sendMessage("Registration successful. " + clientName + ", welcome, to the " + serverName + ".");
         broadcastMessage("Server", clientName + " has joined the chat.");
         clients.put(clientName, clientHandler);
         System.out.println("Registered client: " + clientName);
@@ -96,6 +95,7 @@ public class Server {
     public synchronized void removeClient(String clientName) {
         clients.remove(clientName);
         broadcastMessage("Server", clientName + " has disconnected.");
+        System.err.println("Client " + clientName + " has disconnected.");
     }
 
     private boolean containsBannedPhrase(String message) {

@@ -15,7 +15,7 @@ public class Client {
             this.socket = new Socket(serverAddress, port);
             this.in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             this.out = new PrintWriter(socket.getOutputStream(), true);
-            new ReadThread().start();
+            //readThread();
             sendClientName();
         } catch (IOException e) {
             System.err.println("Unable to connect to the server.");
@@ -29,8 +29,8 @@ public class Client {
         out.println(message);
     }
 
-    private class ReadThread extends Thread {
-        public void run() {
+    private void startReadThread(){
+        new Thread(() -> {
             try {
                 String response;
                 while ((response = in.readLine()) != null) {
@@ -39,7 +39,7 @@ public class Client {
             } catch (IOException e) {
                 System.err.println("Connection closed.");
             }
-        }
+        }).start();
     }
 
     public static void main(String[] args) {
@@ -62,7 +62,7 @@ public class Client {
             try {
                 String response;
                 client = new Client(username, "localhost", 12345);
-                BufferedReader in = new BufferedReader(new InputStreamReader(client.socket.getInputStream()));
+                BufferedReader in = client.in;
 
                 while ((response = in.readLine()) != null) {
                     System.out.println(response);
@@ -79,6 +79,7 @@ public class Client {
                 System.err.println("Unable to connect to the server. Retrying...");
             }
         }
+        client.startReadThread();
 
         System.out.println("Commands:\n" +
                 "@username1 @username2 message (send private message to multiple users)\n" +

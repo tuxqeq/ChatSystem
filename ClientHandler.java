@@ -18,13 +18,10 @@ class ClientHandler extends Thread {
     public void run() {
         try {
             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            out = new PrintWriter(socket.getOutputStream(), true);
-            out.println("Hello, client!");
+            out = new PrintWriter(socket.getOutputStream(), true);;
 
             while (true) {
                 clientName = in.readLine();
-                //out.println("Hello, " + clientName);
-
 
                 if (server.registerClient(clientName, this)) {
                     break;
