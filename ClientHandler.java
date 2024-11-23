@@ -10,11 +10,13 @@ class ClientHandler extends Thread {
     private Server server;
     private PrintWriter out;
     private String clientName;
-    private static ArrayList<ClientHandler> clientHandlers = new ArrayList<>();
+    private boolean isConnected;
+    private static ArrayList<ClientHandler> clientHandlers;
 
     public ClientHandler(Socket socket, Server server) {
         this.socket = socket;
         this.server = server;
+        clientHandlers = new ArrayList<>();
     }
 
     public Socket getSocket() {
@@ -30,10 +32,13 @@ class ClientHandler extends Thread {
             while (true) {
                 clientName = in.readLine();
 
-                if (server.registerClient(clientName, this, this.socket.getPort())) {
+                if (server.registerClient(clientName, this.socket.getPort())) {
+                    isConnected = true;
                     break;
                 }else{
                     clientHandlers.remove(this);
+                    isConnected = false;
+                    break;
                 }
             }
 
@@ -74,7 +79,9 @@ class ClientHandler extends Thread {
         } catch (IOException e) {
             System.err.println("Error handling client " + clientName);
         } finally {
-            server.removeClient(clientName);
+            if(isConnected) {
+                server.removeClient(clientName);
+            }
             try {
                 socket.close();
             } catch (IOException e) {

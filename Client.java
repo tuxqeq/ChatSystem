@@ -70,10 +70,17 @@ public class Client {
                         isRegistered = true;
                         break;
                     }
+                    if(response.startsWith("Server is full, please try connecting later")) {
+                        System.out.println("Disconnecting....");
+                        client.socket.close();
+                        System.exit(0);
+                        break;
+                    }
                     if (response.startsWith("The username")) {
                         System.out.print("Enter username: ");
                         break;
                     }
+
                 }
             } catch (IOException e) {
                 System.err.println("Unable to connect to the server. Retrying...");
