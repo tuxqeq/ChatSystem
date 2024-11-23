@@ -15,12 +15,12 @@ public class Client {
             this.socket = new Socket(serverAddress, port);
             this.in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             this.out = new PrintWriter(socket.getOutputStream(), true);
-            //readThread();
             sendClientName();
         } catch (IOException e) {
             System.err.println("Unable to connect to the server.");
         }
     }
+
     private void sendClientName() {
         out.println(clientName);
     }
@@ -29,8 +29,8 @@ public class Client {
         out.println(message);
     }
 
-    private void startReadThread(){
-        new Thread(() -> {
+    private void startReadThread() {
+        Thread.ofVirtual().start(() -> {
             try {
                 String response;
                 while ((response = in.readLine()) != null) {
@@ -39,7 +39,7 @@ public class Client {
             } catch (IOException e) {
                 System.err.println("Connection closed.");
             }
-        }).start();
+        });
     }
 
     public static void main(String[] args) {
@@ -50,9 +50,8 @@ public class Client {
         boolean isRegistered = false;
 
         while (!isRegistered) {
-
             username = scanner.nextLine();
-            username = username.toLowerCase().replace(" ",  "");
+            username = username.toLowerCase().replace(" ", "");
 
             if (username.isEmpty()) {
                 System.out.println("Username cannot be empty. Please try again.");
@@ -70,7 +69,7 @@ public class Client {
                         isRegistered = true;
                         break;
                     }
-                    if(response.startsWith("Server is full, please try connecting later")) {
+                    if (response.startsWith("Server is full, please try connecting later")) {
                         System.out.println("Disconnecting....");
                         client.socket.close();
                         System.exit(0);
@@ -80,7 +79,6 @@ public class Client {
                         System.out.print("Enter username: ");
                         break;
                     }
-
                 }
             } catch (IOException e) {
                 System.err.println("Unable to connect to the server. Retrying...");

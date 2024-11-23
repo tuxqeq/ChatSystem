@@ -1,6 +1,5 @@
 import java.io.*;
 import java.net.*;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -11,12 +10,10 @@ class ClientHandler extends Thread {
     private PrintWriter out;
     private String clientName;
     private boolean isConnected;
-    private static ArrayList<ClientHandler> clientHandlers;
 
     public ClientHandler(Socket socket, Server server) {
         this.socket = socket;
         this.server = server;
-        clientHandlers = new ArrayList<>();
     }
 
     public Socket getSocket() {
@@ -27,16 +24,14 @@ class ClientHandler extends Thread {
         try {
             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             out = new PrintWriter(socket.getOutputStream(), true);
-            clientHandlers.add(this);
 
             while (true) {
                 clientName = in.readLine();
 
-                if (server.registerClient(clientName, this.socket.getPort())) {
+                if (server.registerClient(clientName, this)) {
                     isConnected = true;
                     break;
                 }else{
-                    clientHandlers.remove(this);
                     isConnected = false;
                     break;
                 }
@@ -86,14 +81,6 @@ class ClientHandler extends Thread {
                 socket.close();
             } catch (IOException e) {
                 e.printStackTrace();
-            }
-        }
-    }
-
-    public static void sendMess(String message, int port){
-        for (ClientHandler clientHandler : clientHandlers) {
-            if (clientHandler.getSocket().getPort() == port) {
-                clientHandler.sendMessage(message);
             }
         }
     }

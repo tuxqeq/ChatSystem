@@ -1,16 +1,19 @@
 import java.io.*;
 import java.net.*;
 import java.util.*;
+import java.util.concurrent.*;
 
 public class Server {
     private int port;
     private String serverName;
     private Set<String> bannedPhrases;
-    private Map<String, Integer> clientPorts;
+    private Map<String, ClientHandler> clients;
+    private ExecutorService threadPool;
 
     public Server(String configFile) {
         loadConfiguration(configFile);
-        clientPorts = new HashMap<>();
+        clients = new HashMap<>();
+        threadPool = Executors.newVirtualThreadPerTaskExecutor();
     }
 
     private void loadConfiguration(String configFile) {
@@ -37,79 +40,74 @@ public class Server {
             System.out.println("Server started on port " + port);
             while (true) {
                 Socket socket = serverSocket.accept();
-                new ClientHandler(socket, this).start();
+                threadPool.submit(() -> new ClientHandler(socket, this).run());
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    public synchronized boolean registerClient(String clientName, int port) {
-        if (clientPorts.containsKey(clientName)) {
-            ClientHandler.sendMess("The username '" + clientName + "' is already taken. Please choose another.", port);
+    public synchronized boolean registerClient(String clientName,  ClientHandler clientHandler) {
+        if (clients.containsKey(clientName)) {
+            clientHandler.sendMessage("The username '" + clientName + "' is already taken. Please choose another.");
             return false;
         }
-        if(clientPorts.size() >= 15) {
-            ClientHandler.sendMess("Server is full, please try connecting later", port);
+        if (clients.size() >= 15) {
+            clientHandler.sendMessage("Server is full, please try connecting later.");
             return false;
         }
-        ClientHandler.sendMess("Registration successful. " + clientName + ", welcome, to the " + serverName + ".", port);
+        clientHandler.sendMessage("Registration successful. " + clientName + ", welcome, to the " + serverName + ".");
         broadcastMessage("Server", clientName + " has joined the chat.");
-        clientPorts.put(clientName, port);
-        System.out.println("Registered client: " + clientName + " on port: " + port);
+        clients.put(clientName, clientHandler);
+        System.out.println("Registered client: " + clientName + " on port: " + clientHandler.getSocket().getPort());
         return true;
     }
 
     public synchronized void broadcastMessage(String sender, String message) {
         if (containsBannedPhrase(message)) {
-            ClientHandler.sendMess("Message blocked: contains banned phrase.", clientPorts.get(sender));
+            clients.get(sender).sendMessage("Message blocked: contains banned phrase.");
             return;
         }
-        for (Map.Entry<String, Integer> entry : clientPorts.entrySet()) {
+        for (Map.Entry<String, ClientHandler> entry : clients.entrySet()) {
             if (!entry.getKey().equals(sender)) {
-                ClientHandler.sendMess(sender + ": " + message, entry.getValue());
+                entry.getValue().sendMessage(sender + ": " + message);
             }
         }
     }
 
     public synchronized void sendMultiplePrivateMessages(String sender, Set<String> recipients, String message) {
         for (String recipient : recipients) {
-            if (clientPorts.get(recipient) != null) {
-                int port = clientPorts.get(recipient);
-                ClientHandler.sendMess("(Private) " + sender + ": " + message, port);
+            ClientHandler client = clients.get(recipient.toLowerCase());
+            if (clients.get(recipient) != null) {
+                client.sendMessage("(Private) " + sender + ": " + message);
             } else {
-                int sendPort = clientPorts.get(sender);
-                ClientHandler.sendMess("!User " + recipient + " is not connected.", sendPort);
+                clients.get(sender).sendMessage("User " + recipient + " is not connected.");
             }
         }
     }
     public synchronized void sendToAllExcept(String sender, Set<String> excludedUsers, String message) {
-        for (Map.Entry<String, Integer> entry : clientPorts.entrySet()) {
+        for (Map.Entry<String, ClientHandler> entry : clients.entrySet()) {
             String recipient = entry.getKey().toLowerCase();
             if (!excludedUsers.contains(recipient) && !recipient.equals(sender.toLowerCase())) {
-                ClientHandler.sendMess(sender + ": " + message, entry.getValue());
+                entry.getValue().sendMessage(sender + ": " + message);
             }
         }
     }
 
     public synchronized String[] getClients() {
-        return clientPorts.keySet().toArray(new String[0]);
+        return clients.keySet().toArray(new String[0]);
     }
 
     public synchronized void removeClient(String clientName) {
-        clientPorts.remove(clientName);
+        clients.remove(clientName);
         broadcastMessage("Server", clientName + " has disconnected.");
         System.err.println("Client " + clientName + " has disconnected.");
     }
 
     private boolean containsBannedPhrase(String message) {
         String lowerMessage = message.toLowerCase();
-        for (String banned : bannedPhrases) {
-            if (lowerMessage.contains(banned)) return true;
-        }
-        return false;
+        return bannedPhrases.stream().anyMatch(lowerMessage::contains);
     }
-
 
     public static void main(String[] args) {
         Server server = new Server("server_config.txt");
