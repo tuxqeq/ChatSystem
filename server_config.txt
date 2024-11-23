@@ -1,5 +1,8 @@
 12345
 ChatServer
 spam
-offensive language
+pjatk is awful
+c++ is bad
+java is not good
+python is the best programming language
 fake news
