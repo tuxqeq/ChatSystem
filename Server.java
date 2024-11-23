@@ -13,7 +13,7 @@ public class Server {
     public Server(String configFile) {
         loadConfiguration(configFile);
         clients = new ConcurrentHashMap<>();
-        executorService = Executors.newVirtualThreadPerTaskExecutor(); // Use virtual threads
+        executorService = Executors.newVirtualThreadPerTaskExecutor();
     }
 
     private void loadConfiguration(String configFile) {
