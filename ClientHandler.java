@@ -4,7 +4,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-class ClientHandler extends Thread {
+class ClientHandler {
     private Socket socket;
     private Server server;
     private PrintWriter out;
@@ -21,13 +21,11 @@ class ClientHandler extends Thread {
     }
 
     public void run() {
-        try {
-            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+        try (BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
             out = new PrintWriter(socket.getOutputStream(), true);
 
             while (true) {
                 clientName = in.readLine();
-
                 if (server.registerClient(clientName, this)) {
                     isConnected = true;
                     break;
@@ -41,15 +39,15 @@ class ClientHandler extends Thread {
             while ((message = in.readLine()) != null) {
                 if (message.equalsIgnoreCase("BANNED_PHRASES")) {
                     out.println("Banned Phrases: " + server.getBannedPhrases());
-                } else if(message.equalsIgnoreCase("CLIENTS")){
-                    out.println("Connected clients: " + String.join(",",server.getClients()));
-                }else if (message.startsWith("@")) {
+                } else if (message.equalsIgnoreCase("CLIENTS")) {
+                    out.println("Connected clients: " + String.join(",", server.getClients()));
+                } else if (message.startsWith("@")) {
                     Set<String> recipients = new HashSet<>();
                     String[] parts = message.split(" ");
                     int index = 0;
 
                     while (index < parts.length && parts[index].startsWith("@")) {
-                        recipients.add(parts[index].substring(1).toLowerCase());
+                        recipients.add(parts[index].substring(1));
                         index++;
                     }
 
@@ -61,7 +59,7 @@ class ClientHandler extends Thread {
                     int index = 0;
 
                     while (index < parts.length && parts[index].startsWith("!")) {
-                        excludedUsers.add(parts[index].substring(1).toLowerCase());
+                        excludedUsers.add(parts[index].substring(1));
                         index++;
                     }
 
@@ -72,7 +70,7 @@ class ClientHandler extends Thread {
                 }
             }
         } catch (IOException e) {
-            System.err.println("Error handling client " + clientName);
+            System.err.println("Error handling client " + clientName + ": " + e.getMessage());
         } finally {
             if(isConnected) {
                 server.removeClient(clientName);

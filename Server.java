@@ -8,12 +8,12 @@ public class Server {
     private String serverName;
     private Set<String> bannedPhrases;
     private Map<String, ClientHandler> clients;
-    private ExecutorService threadPool;
+    private ExecutorService executorService;
 
     public Server(String configFile) {
         loadConfiguration(configFile);
-        clients = new HashMap<>();
-        threadPool = Executors.newVirtualThreadPerTaskExecutor();
+        clients = new ConcurrentHashMap<>();
+        executorService = Executors.newVirtualThreadPerTaskExecutor(); // Use virtual threads
     }
 
     private void loadConfiguration(String configFile) {
@@ -40,14 +40,16 @@ public class Server {
             System.out.println("Server started on port " + port);
             while (true) {
                 Socket socket = serverSocket.accept();
-                threadPool.submit(() -> new ClientHandler(socket, this).run());
+                executorService.submit(() -> new ClientHandler(socket, this).run());
             }
         } catch (IOException e) {
             e.printStackTrace();
+        } finally {
+            executorService.shutdown();
         }
     }
 
-    public synchronized boolean registerClient(String clientName,  ClientHandler clientHandler) {
+    public synchronized boolean registerClient(String clientName, ClientHandler clientHandler) {
         if (clients.containsKey(clientName)) {
             clientHandler.sendMessage("The username '" + clientName + "' is already taken. Please choose another.");
             return false;
@@ -56,7 +58,7 @@ public class Server {
             clientHandler.sendMessage("Server is full, please try connecting later.");
             return false;
         }
-        clientHandler.sendMessage("Registration successful. " + clientName + ", welcome, to the " + serverName + ".");
+        clientHandler.sendMessage("Registration successful. " + clientName + ", welcome to the " + serverName + ".");
         broadcastMessage("Server", clientName + " has joined the chat.");
         clients.put(clientName, clientHandler);
         System.out.println("Registered client: " + clientName + " on port: " + clientHandler.getSocket().getPort());
@@ -77,18 +79,19 @@ public class Server {
 
     public synchronized void sendMultiplePrivateMessages(String sender, Set<String> recipients, String message) {
         for (String recipient : recipients) {
-            ClientHandler client = clients.get(recipient.toLowerCase());
-            if (clients.get(recipient) != null) {
+            ClientHandler client = clients.get(recipient);
+            if (client != null) {
                 client.sendMessage("(Private) " + sender + ": " + message);
             } else {
                 clients.get(sender).sendMessage("User " + recipient + " is not connected.");
             }
         }
     }
+
     public synchronized void sendToAllExcept(String sender, Set<String> excludedUsers, String message) {
         for (Map.Entry<String, ClientHandler> entry : clients.entrySet()) {
-            String recipient = entry.getKey().toLowerCase();
-            if (!excludedUsers.contains(recipient) && !recipient.equals(sender.toLowerCase())) {
+            String recipient = entry.getKey();
+            if (!excludedUsers.contains(recipient) && !recipient.equals(sender)) {
                 entry.getValue().sendMessage(sender + ": " + message);
             }
         }

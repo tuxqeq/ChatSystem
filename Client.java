@@ -54,7 +54,7 @@ public class Client {
             username = username.toLowerCase().replace(" ", "");
 
             if (username.isEmpty()) {
-                System.out.println("Username cannot be empty. Please try again.");
+                System.err.println("Username cannot be empty. Please try again.");
                 continue;
             }
 
@@ -94,7 +94,7 @@ public class Client {
         while (true) {
             String input = scanner.nextLine();
             if (input.isEmpty()) {
-                System.out.println("Message cannot be empty.");
+                System.err.println("Message cannot be empty.");
             } else {
                 client.sendMessage(input);
             }
