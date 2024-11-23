@@ -6,12 +6,10 @@ public class Server {
     private int port;
     private String serverName;
     private Set<String> bannedPhrases;
-    private Map<String, ClientHandler> clients;
     private Map<String, Integer> clientPorts;
 
     public Server(String configFile) {
         loadConfiguration(configFile);
-        //clients = new HashMap<>();
         clientPorts = new HashMap<>();
     }
 
