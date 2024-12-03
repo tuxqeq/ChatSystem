@@ -86,7 +86,7 @@ public class Client {
         }
         client.startReadThread();
 
-        System.out.println("Commands:\n" +
+        System.out.println("\nCommands:\n" +
                 "@username1 @username2 message (send private message to multiple users)\n" +
                 "!username1 !username2 message (broadcast excluding specific users)\n" +
                 "CLIENTS to list all the clients\n" +
