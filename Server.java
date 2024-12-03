@@ -17,7 +17,7 @@ public class Server {
     }
 
     private void loadConfiguration(String configFile) {
-        bannedPhrases = new HashSet<>();
+        bannedPhrases = Collections.synchronizedSet(new HashSet<>());
         try (BufferedReader reader = new BufferedReader(new FileReader(configFile))) {
             port = Integer.parseInt(reader.readLine().trim());
             serverName = reader.readLine().trim();
